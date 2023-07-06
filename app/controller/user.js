@@ -1,6 +1,7 @@
 'use strict';
 
 const Controller = require('egg').Controller;
+const crypto = require('crypto');
 
 class UserController extends Controller {
   // 注册
@@ -46,6 +47,35 @@ class UserController extends Controller {
     delete user.password;
 
     ctx.apiSuccess(user);
+  }
+
+  // 登录
+  async login() {
+    const { ctx, app } = this; // 参数验证
+    ctx.validate({ username: { required: true, type: 'string', desc: '用户名' }, password: { required: true, type: 'string', desc: '密码' } });
+    // 获取到数据
+    const { username, password } = ctx.request.body; // 验证用户是否存在
+    let user = await app.model.User.findOne({ where: { username } });
+    if (!user) {
+      return ctx.apiFail('当前用户不存在');
+    }
+    this.checkPassword(password, user.password);
+    user = JSON.parse(JSON.stringify(user)); // 生成token
+    user.token = ctx.getToken(user);
+    delete user.password; // 加入缓存中
+    if (!(await this.service.cache.set('user_' + user.id, user.token))) {
+      ctx.throw(400, '登录失败');
+    }
+    ctx.apiSuccess(user);
+  }
+  // 验证密码
+  checkPassword(password, hash_password) {
+    const hmac = crypto.createHash('sha256', this.app.config.crypto.secret);
+    hmac.update(password);
+    if (hmac.digest('hex') !== hash_password) {
+      this.ctx.throw(400, '密码错误');
+    }
+    return true;
   }
 }
 
