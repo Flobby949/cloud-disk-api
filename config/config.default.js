@@ -16,7 +16,11 @@ module.exports = appInfo => {
   config.keys = appInfo.name + '_1688569906366_9611';
 
   // add your middleware config here
-  config.middleware = ['errorHandler'];
+  config.middleware = ['errorHandler', 'auth'];
+
+  config.auth = {
+    match: ['/logout', 'upload', 'getSize', '/file', '/share'],
+  };
 
   config.security = {
     // 关闭 csrf
