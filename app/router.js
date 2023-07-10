@@ -15,4 +15,6 @@ module.exports = app => {
   router.post('/logout', controller.user.logout);
   // 文件上传
   router.post('/upload', controller.file.upload);
+  // 剩余容量
+  router.get('/getSize', controller.user.getSize);
 };
