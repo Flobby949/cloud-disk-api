@@ -24,6 +24,26 @@ class ShareController extends Controller {
     const list = await app.model.Share.findAndCountAll({ where: { user_id }, include: [{ model: app.model.File }] });
     ctx.apiSuccess(list);
   }
+
+  // 查看分享
+  async read() {
+    const { ctx, app, service } = this;
+    const sharedurl = ctx.params.sharedurl;
+    if (!sharedurl) {
+      return ctx.apiFail('非法参数');
+    }
+    const file_id = ctx.query.file_id;
+    // 分享是否存在
+    const s = await service.share.isExist(sharedurl);
+    const where = { user_id: s.user_id };
+    if (!file_id) {
+      where.id = s.file_id;
+    } else {
+      where.file_id = file_id;
+    }
+    const rows = await app.model.File.findAll({ where, order: [['isdir', 'desc']] });
+    ctx.apiSuccess(rows);
+  }
 }
 
 module.exports = ShareController;
