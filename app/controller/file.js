@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 'use strict';
 const Controller = require('egg').Controller;
 const fs = require('fs');
@@ -28,6 +29,7 @@ class FileController extends Controller {
     const name = prefixPath + ctx.genID(10) + path.extname(file.filename);
     // 判断用户网盘内存是否不足
     const s = await new Promise((resolve, reject) => {
+      // eslint-disable-next-line node/prefer-promises/fs
       fs.stat(file.filepath, (err, stats) => {
         resolve((stats.size / 1024).toFixed(1));
       });
@@ -62,6 +64,39 @@ class FileController extends Controller {
       return ctx.apiSuccess(res);
     }
     ctx.apiFail('上传失败');
+  }
+  // 文件列表
+  async list() {
+    const { ctx, app } = this;
+    const user_id = ctx.authUser.id;
+    ctx.validate({
+      file_id: { required: true, type: 'int', defValue: 0, desc: '目录id' },
+      orderby: {
+        required: false,
+        type: 'string',
+        defValue: 'name',
+        range: {
+          in: ['name', 'created_time'],
+        },
+        desc: '排序',
+      },
+      type: { required: false, type: 'string', desc: '类型' },
+    });
+    const { file_id, orderby, type } = ctx.query;
+    const where = { user_id, file_id };
+    if (type && type !== 'all') {
+      const Op = app.Sequelize.Op;
+      where.ext = { [Op.like]: type + '%' };
+    }
+    console.log(file_id + '>>>>>>>>' + orderby + '&&&&&&');
+    const rows = await app.model.File.findAll({
+      where,
+      order: [
+        ['isdir', 'desc'],
+        [orderby, 'desc'],
+      ],
+    });
+    ctx.apiSuccess({ rows });
   }
 }
 module.exports = FileController;
