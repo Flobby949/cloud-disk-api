@@ -65,6 +65,7 @@ class FileController extends Controller {
     }
     ctx.apiFail('上传失败');
   }
+
   // 文件列表
   async list() {
     const { ctx, app } = this;
@@ -98,8 +99,8 @@ class FileController extends Controller {
     });
     ctx.apiSuccess({ rows });
   }
-  // 创建文件夹
 
+  // 创建文件夹
   async createdir() {
     const { ctx, app } = this;
     const user_id = ctx.authUser.id;
@@ -115,6 +116,33 @@ class FileController extends Controller {
       await this.service.file.isDirExist(file_id);
     }
     const res = await app.model.File.create({ name, file_id, user_id, isdir: 1, size: 0 });
+    ctx.apiSuccess(res);
+  }
+
+  // 重命名
+  async rename() {
+    const { ctx, app } = this;
+    const user_id = ctx.authUser.id;
+    ctx.validate({
+      id: { required: true, type: 'int', desc: '记录' },
+      file_id: { required: true, type: 'int', defValue: 0, desc: '目录id' },
+      name: { required: true, type: 'string', desc: '文件名称' },
+    });
+    const { id, file_id, name } = ctx.request.body;
+
+    // 验证目录id是否存在
+    if (file_id > 0) {
+      await this.service.file.isDirExist(file_id);
+    }
+    // 文件是否存在
+    const f = await this.service.file.isExist(id);
+    let suffix = '';
+    if (f.isdir === 0) {
+      const fArr = f.name.split('.');
+      suffix = '.' + fArr[fArr.length - 1];
+    }
+    f.name = `${name}${suffix}`;
+    const res = await f.save();
     ctx.apiSuccess(res);
   }
 }
