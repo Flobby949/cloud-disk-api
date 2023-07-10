@@ -98,5 +98,24 @@ class FileController extends Controller {
     });
     ctx.apiSuccess({ rows });
   }
+  // 创建文件夹
+
+  async createdir() {
+    const { ctx, app } = this;
+    const user_id = ctx.authUser.id;
+    ctx.validate({
+      file_id: { required: true, type: 'int', defValue: 0, desc: '目录id' },
+      name: { required: true, type: 'string', desc: '文件夹名称' },
+    });
+    const { file_id, name } = ctx.request.body;
+
+    // 验证目录id是否存在
+
+    if (file_id) {
+      await this.service.file.isDirExist(file_id);
+    }
+    const res = await app.model.File.create({ name, file_id, user_id, isdir: 1, size: 0 });
+    ctx.apiSuccess(res);
+  }
 }
 module.exports = FileController;
