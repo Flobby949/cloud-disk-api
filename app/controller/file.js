@@ -145,5 +145,38 @@ class FileController extends Controller {
     const res = await f.save();
     ctx.apiSuccess(res);
   }
+
+  // 批量删除文件
+  async delete() {
+    const { ctx, app } = this;
+    const user_id = ctx.authUser.id;
+    ctx.validate({ ids: { required: true, type: 'string', desc: '记录' } });
+    let { ids } = ctx.request.body;
+    ids = ids.split(',');
+    // 计算删除文件内存
+    const files = await app.model.File.findAll({ where: { id: ids, user_id } });
+    let size = 0;
+    files.forEach(item => {
+      size = size + item.size;
+    });
+    const res = await app.model.File.destroy({ where: { id: ids, user_id } });
+    if (res) {
+      // 减去使用内存
+      size = ctx.authUser.used_size - size;
+      ctx.authUser.used_size = size > 0 ? size : 0;
+      ctx.authUser.save();
+    }
+    ctx.apiSuccess(res);
+  }
+  // 搜索文件
+  async search() {
+    const { ctx, app } = this;
+    const user_id = ctx.authUser.id;
+    ctx.validate({ keyword: { required: true, type: 'string', desc: '关键字' } });
+    const { keyword } = ctx.query;
+    const Op = app.Sequelize.Op;
+    const rows = await app.model.File.findAll({ where: { name: { [Op.like]: `%${keyword}%` }, isdir: 0, user_id } });
+    ctx.apiSuccess({ rows });
+  }
 }
 module.exports = FileController;
