@@ -15,15 +15,13 @@ class FileController extends Controller {
     ctx.validate({ file_id: { required: true, type: 'int', defValue: 0, desc: '目录id' } });
     const file_id = ctx.query.file_id;
     console.log(file_id + '<<<<<<<<<<'); // 目录id是否存在
-    if (file_id > 0) {
-      // 目录是否存在
-
-      await service.file.isDirExist(file_id);
-    }
     // 取得上传的文件
-    const file = ctx.request.files[0]; // 根据file_id一直向上找到顶层目录
-
-    const prefixPath = await service.file.seachDir(file_id);
+    const file = ctx.request.files[0];
+    let prefixPath = '';
+    if (file_id > 0) {
+      // 根据file_id一直向上找到顶层目录
+      prefixPath = await service.file.seachDir(file_id);
+    }
     console.log(prefixPath);
     // 拼接出最终文件上传目录
     const name = prefixPath + ctx.genID(10) + path.extname(file.filename);
@@ -36,8 +34,8 @@ class FileController extends Controller {
     });
     if (currentUser.total_size - currentUser.used_size < s) {
       return ctx.apiFail('你的可用内存不足');
-    } // 上传到oss
-
+    }
+    // 上传到oss
     let result;
     try {
       result = await ctx.oss.put(name, file.filepath);

@@ -3,9 +3,6 @@ const Service = require('egg').Service;
 class FileService extends Service {
   // 目录是否存在
   async isDirExist(id) {
-    console.log('+++++++++++++++');
-    console.log(this.ctx);
-    console.log('+++++++++++++++');
     const f = await this.app.model.File.findOne({ where: { id, user_id: this.ctx.authUser.id, isdir: 1 } });
     if (!f) {
       return this.ctx.throw(404, '目录不存在');
